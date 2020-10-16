@@ -359,7 +359,7 @@ const game = () => {
             }
         })
 
-        if (cough.radius > COUGH_RADIUS*(1+difficulity)) {
+        if (cough.radius > COUGH_RADIUS*difficulity) {
             object.splice(index, 1);
         }
     });
