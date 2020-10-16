@@ -12,12 +12,13 @@ const drawCircle = (coords, radius, color) => {
 const drawEmptyCircle = (coords, radius, color) => {
     ctx.beginPath();
     ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
     ctx.arc(coords.x, coords.y, radius, 0, Math.PI*2);
     ctx.stroke();
 }
 
 const writeText = (coords, text, color) => {
-    ctx.font = "15px Arial";
+    ctx.font = "400 17px Arial";
     ctx.fillText(text, coords.x, coords.y);
 }
 

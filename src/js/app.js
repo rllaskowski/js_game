@@ -19,6 +19,10 @@ ethanImage.src = "./static/img/ethan.png";
 const coughImage = new Image(); 
 coughImage.src = "./static/img/cough.png";
 
+const sanatizerImage = new Image(); 
+coughImage.src = "./static/img/cough.png";
+
+
 const rand = (min, max) => {
     min = Math.ceil(min);
     max = Math.floor(max);
@@ -125,10 +129,33 @@ class Security  {
         }
     }
 
+    getBonus(bonus) {
+        if (this.coords.getDistance(bonus.coords) < this.radius+bonus.radius) {
+            return true;
+        }
+
+        return false;
+    }
+
     useWeapon() {
         if (this.weapon === null) {
             this.weapon = new Weapon(this.coords.x, this.coords.y);
         }
+    }
+}
+
+
+class Bonus {
+    constructor() {
+        this.radius = 30;
+        const x = rand(this.radius, canvas.width-this.radius);
+        const y = rand(this.radius, canvas.height-this.radius);
+
+        this.coords = new Vector(x, y);
+    }
+
+    draw() {
+        drawImage(this.coords, sanatizer, new Vector(this.radius*2, this.radius*2));
     }
 }
 
@@ -196,7 +223,7 @@ class Client {
     }
     
     getWeapon(weapon) {
-        if(this.coords.getDistance(weapon.coords) <  Math.max(this.radius,weapon.radius) && this.makeHealthy()) {
+        if(this.coords.getDistance(weapon.coords) <  this.radius+weapon.radius && this.makeHealthy()) {
             return true
         }
 
@@ -267,7 +294,11 @@ let level = 0;
 let coughs = [];
 let weaponReload = 0;
 let speedReload = 0;
+let bonusReload;
 let speeding = 0;
+let bonus;
+let hasBonus;
+
 
 const WEAPON_RELOAD = 1000;
 const SPEED_RELOAD = 5000;
@@ -300,11 +331,14 @@ const prepareLevel = () => {
     difficulity += DIFFICULITY_JUMP;
     clients = [];
     coughs = [];
+    bonus = null;
+    bonusReload = rand(8000, 10000);
     weaponReload = 0;
     speeding = 0; 
     speedReload = 0;
     security = new Security(canvas.width-30, canvas.height/2);
     sick = 0;
+    hasBonus = false;
 
     for (let i = 0; i < level+5; i++) {
         clients.push(new Client(0, canvas.height/2, false));
@@ -316,7 +350,7 @@ const prepareLevel = () => {
     }
   
 
-    levelText.innerHTML = `Poziom: ${level}`;
+    levelText.innerHTML = `Poziom ${level}`;
 }
 
 
@@ -327,7 +361,22 @@ const game = () => {
 
     sickText.innerHTML = `Bez maseczki: ${sick}`;
     clear();
-    
+
+
+    if (bonus) {
+        if (security.getBonus(bonus)) {
+            bonus = null;
+            bonusReload = rand(8000, 10000);
+            hasBonus = true;
+        } else {
+            bonus.draw();
+        }
+    } else if (bonusReload <= 0) {
+        bonus = new Bonus();
+
+    }
+  
+
     clients.forEach(client => {
         if (!client.live(security)) {
             coughs.push(new Cough(client.coords.x, client.coords.y))
@@ -345,8 +394,9 @@ const game = () => {
     security.move(mousePos, speeding > 0);
 
     
-    if (security.weapon && security.weapon.radius > WEAPON_RADIUS) {
+    if (security.weapon && security.weapon.radius > WEAPON_RADIUS*(hasBonus? 2: 1)) {
         security.weapon = null;
+        hasBonus = false;
         weaponReload = WEAPON_RELOAD;
     }
 
@@ -367,6 +417,10 @@ const game = () => {
     weaponReload = Math.max(weaponReload-FREQ, 0);
     speedReload = Math.max(speedReload-FREQ, 0);
     speeding = Math.max(speeding-FREQ, 0);
+    
+    if (!hasBonus) {
+        bonusReload = Math.max(bonusReload-FREQ, 0);
+    }
 
     fillBar();
 }
@@ -383,7 +437,6 @@ document.onmousemove = evt => {
 }
 
 document.onkeypress = evt => {
-   
     if (evt.code == "Space" && weaponReload <= 0) {
         security.useWeapon();
     } else if (evt.code == "KeyS" && speedReload <= 0) {
